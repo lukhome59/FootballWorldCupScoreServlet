@@ -17,7 +17,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.doAnswer;
@@ -33,7 +32,6 @@ class FootballWorldCupScoreServletTest {
             return null;
         }).when(mAsyncContext).start(any(Runnable.class));
         mServlet = new FootballWorldCupScoreServlet();
-        
     }
 
     @Test
@@ -61,6 +59,16 @@ class FootballWorldCupScoreServletTest {
         JSONObject response2 = executeUpdateScore(id, "_", "_");
         verifyResult(response2, FootballWorldCupScoreServlet.VALUE_RESULT_FAILURE);
     }
+    
+    @Test
+    void testUpdateNegativeScore() throws Exception {
+    	Score score = new Score("aaa", "bbb");
+    	JSONObject response1 = executeStartGame(score);
+    	int id = verifyValidId(response1);
+
+        JSONObject response2 = executeUpdateScore(id, "1", "-1");
+        verifyResult(response2, FootballWorldCupScoreServlet.VALUE_RESULT_FAILURE);
+    }
 
     @Test
     void testMissingUpdateScore() throws Exception {
@@ -77,10 +85,10 @@ class FootballWorldCupScoreServletTest {
     	Score score = new Score("aaa", "bbb");
     	JSONObject response1 = executeStartGame(score);
     	int id = verifyValidId(response1);
-    	
+
     	JSONObject response2 = executeUpdateScore(id, "10", "2");
         verifyResult(response2, FootballWorldCupScoreServlet.VALUE_RESULT_SUCCESS);
-        
+
         List<DatabaseScore> list = new ArrayList<>();
         DatabaseScore dbScore = new DatabaseScore(score);
         dbScore.setHomeScore(10);
@@ -88,17 +96,17 @@ class FootballWorldCupScoreServletTest {
         list.add(dbScore);
         validateSummary(list);
     }
-    
+
     @Test
     void testUpdateScoreTwice() throws Exception {
     	Score score = new Score("aaa", "bbb");
     	JSONObject response1 = executeStartGame(score);
     	int id = verifyValidId(response1);
-    	
+
     	executeUpdateScore(id, "10", "2");
     	JSONObject response2 = executeUpdateScore(id, "20", "4");
         verifyResult(response2, FootballWorldCupScoreServlet.VALUE_RESULT_SUCCESS);
-        
+
         List<DatabaseScore> list = new ArrayList<>();
         DatabaseScore dbScore = new DatabaseScore(score);
         dbScore.setHomeScore(20);
@@ -106,18 +114,18 @@ class FootballWorldCupScoreServletTest {
         list.add(dbScore);
         validateSummary(list);
     }
-    
+
     @Test
     void testOrderAfterUpdateScore() throws Exception {
     	Score score1 = new Score("aaa", "bbb");
     	JSONObject response1 = executeStartGame(score1);
     	int id = verifyValidId(response1);
-    	
+
     	Score score2 = new Score("xxx", "zzz");
     	executeStartGame(score2);
-    	
+
     	executeUpdateScore(id, "5", "4");
-    	
+
         List<DatabaseScore> list = new ArrayList<>();
         DatabaseScore dbScore1 = new DatabaseScore(score1);
         dbScore1.setHomeScore(5);
@@ -127,7 +135,7 @@ class FootballWorldCupScoreServletTest {
         list.add(dbScore2);
         validateSummary(list);
     }
-    
+
     @Test
     void testFinishInvalidGame() throws Exception {
     	JSONObject response = executeFinishGame(100);
@@ -149,15 +157,22 @@ class FootballWorldCupScoreServletTest {
     }
     
     @Test
-    void testStartGameTwice() throws Exception {	
+    void testStartTeamWthiTooLongName() throws Exception {
+    	Score score = new Score("1234567890A", "aaa");
+    	JSONObject response = executeStartGame(score);
+    	verifyResult(response, FootballWorldCupScoreServlet.VALUE_RESULT_FAILURE);
+    }
+
+    @Test
+    void testStartGameTwice() throws Exception {
     	Score score = new Score("aaa", "bbb");
     	executeStartGame(score);
     	JSONObject response = executeStartGame(score);
     	verifyResult(response, FootballWorldCupScoreServlet.VALUE_RESULT_FAILURE);
     }
-    
+
     @Test
-    void testStartGameTwiceWithMistakenlySwappedTeams() throws Exception {	
+    void testStartGameTwiceWithMistakenlySwappedTeams() throws Exception {
     	Score score = new Score("aaa", "bbb");
     	executeStartGame(score);
     	Score swappedScore = new Score("bbb", "aaa");
@@ -166,14 +181,14 @@ class FootballWorldCupScoreServletTest {
     }
 
     @Test
-    void testStartAndFinishGame() throws Exception {	
+    void testStartAndFinishGame() throws Exception {
     	Score score = new Score("aaa", "bbb");
     	JSONObject response1 = executeStartGame(score);
     	int id = verifyValidId(response1);
-                
+
     	JSONObject response2 = executeFinishGame(id);
         verifyResult(response2, FootballWorldCupScoreServlet.VALUE_RESULT_SUCCESS);
-        
+
         List<DatabaseScore> list = new ArrayList<>();
         validateSummary(list);
     }
@@ -183,34 +198,34 @@ class FootballWorldCupScoreServletTest {
         List<DatabaseScore> list = new ArrayList<>();
         validateSummary(list);
     }
-    
+
     @Test
     void testOneItemSummary() throws Exception {
     	Score score = new Score("aaa", "bbb");
     	JSONObject response1 = executeStartGame(score);
     	int id = verifyValidId(response1);
-        
+
         List<DatabaseScore> list = new ArrayList<>();
         DatabaseScore dbScore = new DatabaseScore(score);
         assertEquals(id, dbScore.getId());
         list.add(dbScore);
         validateSummary(list);
     }
-    
+
     @Test
     void testTwoItemsSummary() throws Exception {
     	Score score1 = new Score("aaa", "bbb");
     	executeStartGame(score1);
-    	
+
     	Score score2 = new Score("www", "ttt");
     	executeStartGame(score2);
-    	        
+
         List<DatabaseScore> list = new ArrayList<>();
         list.add(new DatabaseScore(score2));
         list.add(new DatabaseScore(score1));
         validateSummary(list);
     }
-    
+
     private JSONObject executeStartGame(Score score) throws Exception {
     	HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
         HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
@@ -225,10 +240,10 @@ class FootballWorldCupScoreServletTest {
 
         mServlet.doPost(request, response);
         awaitExecutor();
-        
+
         return new JSONObject(responseBody.toString());
     }
-    
+
     private JSONObject executeFinishGame(int id) throws Exception {
     	HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
         HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
@@ -244,7 +259,7 @@ class FootballWorldCupScoreServletTest {
 
         return new JSONObject(responseBody.toString());
     }
-    
+
     private JSONObject executeUpdateScore(int id, String homeScore, String awayScore) throws Exception {
     	HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
         HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
@@ -258,13 +273,13 @@ class FootballWorldCupScoreServletTest {
         		.thenReturn(homeScore);
         when(request.getParameter(FootballWorldCupScoreServlet.PARAM_AWAY_TEAM_SCORE))
         		.thenReturn(awayScore);
-       
+
         mServlet.doPost(request, response);
         awaitExecutor();
 
         return new JSONObject(responseBody.toString());
     }
-    
+
     private void validateSummary(List<DatabaseScore> list) throws Exception {
         HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
         HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
@@ -272,7 +287,7 @@ class FootballWorldCupScoreServletTest {
         when(response.getWriter()).thenReturn(new PrintWriter(responseBody));
         when(request.startAsync()).thenReturn(mAsyncContext);
         when(request.getServletPath()).thenReturn("/getSummary");
-        
+
         mServlet.doPost(request, response);
         awaitExecutor();
 
@@ -280,7 +295,7 @@ class FootballWorldCupScoreServletTest {
     }
 
     private void awaitExecutor() throws Exception {
-        mServlet.mDatabaseExecutor.submit(() -> {}).get(5, TimeUnit.SECONDS);
+        mServlet.awaitDatabase();
     }
 
     private static int verifyValidId(JSONObject response) {
@@ -295,19 +310,19 @@ class FootballWorldCupScoreServletTest {
     	JSONArray jsonList = response.getJSONArray(FootballWorldCupScoreServlet.KEY_LIST);
     	assertEquals(jsonList.length(), expectedList.size());
     	for (int i = 0; i < jsonList.length(); i++) {
-    		assertEquals(jsonList.getJSONObject(i).getString(FootballWorldCupScoreServlet.KEY_HOME_TEAM), 
+    		assertEquals(jsonList.getJSONObject(i).getString(FootballWorldCupScoreServlet.KEY_HOME_TEAM),
     				expectedList.get(i).getHomeTeam());
-    		assertEquals(jsonList.getJSONObject(i).getString(FootballWorldCupScoreServlet.KEY_AWAY_TEAM), 
+    		assertEquals(jsonList.getJSONObject(i).getString(FootballWorldCupScoreServlet.KEY_AWAY_TEAM),
     				expectedList.get(i).getAwayTeam());
-    		assertEquals(jsonList.getJSONObject(i).getInt(FootballWorldCupScoreServlet.KEY_HOME_TEAM_SCORE), 
+    		assertEquals(jsonList.getJSONObject(i).getInt(FootballWorldCupScoreServlet.KEY_HOME_TEAM_SCORE),
     				expectedList.get(i).getHomeScore());
-    		assertEquals(jsonList.getJSONObject(i).getInt(FootballWorldCupScoreServlet.KEY_HOME_TEAM_SCORE), 
+    		assertEquals(jsonList.getJSONObject(i).getInt(FootballWorldCupScoreServlet.KEY_HOME_TEAM_SCORE),
     				expectedList.get(i).getHomeScore());
-    		assertEquals(jsonList.getJSONObject(i).getInt(FootballWorldCupScoreServlet.KEY_ID), 
+    		assertEquals(jsonList.getJSONObject(i).getInt(FootballWorldCupScoreServlet.KEY_ID),
     				expectedList.get(i).getId());
     	}
     }
-    
+
     private static void verifyResult(JSONObject response, String expectedResult) {
     	assertEquals(response.get(FootballWorldCupScoreServlet.KEY_RESULT), expectedResult);
     }

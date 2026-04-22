@@ -34,20 +34,6 @@ public class Score {
 		return new Score(mAwayTeam, mHomeTeam);
 	}
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (!(o instanceof Score)) return false;
-		Score other = (Score) o;
-		return mHomeTeam.equals(other.mHomeTeam) && mAwayTeam.equals(other.mAwayTeam)
-				&& mHomeScore == other.mHomeScore && mAwayScore == other.mAwayScore;
-	}
-
-	@Override
-	public int hashCode() {
-		return 31 * (31 * mHomeTeam.hashCode() + mAwayTeam.hashCode()) + 31 * mHomeScore + mAwayScore;
-	}
-
 	private final String mHomeTeam;
 	private final String mAwayTeam;
 	private int mHomeScore;

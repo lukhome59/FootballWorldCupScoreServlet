@@ -39,6 +39,7 @@ import org.json.JSONObject;
 @WebServlet(asyncSupported = true, urlPatterns = {"/getSummary", "/startGame", "/finishGame", "/updateScore"})
 public class FootballWorldCupScoreServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
+    private static final int MAX_TEAM_NAME_LENGTH = 10;
     public static final String KEY_RESULT = "result";
     public static final String VALUE_RESULT_SUCCESS = "success";
     public static final String VALUE_RESULT_FAILURE = "failure";
@@ -55,7 +56,7 @@ public class FootballWorldCupScoreServlet extends HttpServlet {
     public static final String KEY_HOME_TEAM_SCORE = "homeScore";
     public static final String KEY_AWAY_TEAM_SCORE = "awayScore";
 
-	@Override
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         final AsyncContext asyncContext = request.startAsync();
@@ -118,6 +119,16 @@ public class FootballWorldCupScoreServlet extends HttpServlet {
 	private CompletableFuture<JSONObject> handleStartGame(HttpServletRequest request) {
 		String homeTeam = request.getParameter(PARAM_HOME_TEAM);
 		String awayTeam = request.getParameter(PARAM_AWAY_TEAM);
+		if (homeTeam != null && homeTeam.length() > MAX_TEAM_NAME_LENGTH) {
+			return CompletableFuture.completedFuture(
+					new JSONObject().put(KEY_RESULT, VALUE_RESULT_FAILURE)
+					.put(KEY_MESSAGE, "Home team name too long (max " + MAX_TEAM_NAME_LENGTH + " characters)"));
+		}
+		if (awayTeam != null && awayTeam.length() > MAX_TEAM_NAME_LENGTH) {
+			return CompletableFuture.completedFuture(
+					new JSONObject().put(KEY_RESULT, VALUE_RESULT_FAILURE)
+					.put(KEY_MESSAGE, "Away team name too long (max " + MAX_TEAM_NAME_LENGTH + " characters)"));
+		}
 		Score score = new Score(homeTeam, awayTeam);
 		return mDatabase.insertAsync(score, mDatabaseExecutor).thenApply(id -> {
 			JSONObject json = new JSONObject()
@@ -156,6 +167,11 @@ public class FootballWorldCupScoreServlet extends HttpServlet {
 					.put(KEY_MESSAGE, "Invalid home team score format: "
 								+ request.getParameter(PARAM_HOME_TEAM_SCORE)));
 		}
+		if (homeScore < 0) {
+			return CompletableFuture.completedFuture(
+					new JSONObject().put(KEY_RESULT, VALUE_RESULT_FAILURE)
+					.put(KEY_MESSAGE, "Invalid home team score: must not be negative"));
+		}
 		int awayScore;
 		try {
 			awayScore = Integer.parseInt(request.getParameter(PARAM_AWAY_TEAM_SCORE));
@@ -165,6 +181,11 @@ public class FootballWorldCupScoreServlet extends HttpServlet {
 					new JSONObject().put(KEY_RESULT, VALUE_RESULT_FAILURE)
 					.put(KEY_MESSAGE, "Invalid away team score format: "
 								+ request.getParameter(PARAM_AWAY_TEAM_SCORE)));
+		}
+		if (awayScore < 0) {
+			return CompletableFuture.completedFuture(
+					new JSONObject().put(KEY_RESULT, VALUE_RESULT_FAILURE)
+					.put(KEY_MESSAGE, "Invalid away team score: must not be negative"));
 		}
 		int id;
 		try {
@@ -183,6 +204,17 @@ public class FootballWorldCupScoreServlet extends HttpServlet {
 		});
 	}
 
-	public final ExecutorService mDatabaseExecutor = Executors.newSingleThreadExecutor();
+    @Override
+    public void destroy() {
+        mDatabaseExecutor.shutdown();
+        super.destroy();
+    }
+
+	/** Waits until all pending database tasks are complete. For testing only. */
+	void awaitDatabase() throws Exception {
+		mDatabaseExecutor.submit(() -> {}).get(5, java.util.concurrent.TimeUnit.SECONDS);
+	}
+
+	private final ExecutorService mDatabaseExecutor = Executors.newSingleThreadExecutor();
     private final Database mDatabase = new Database();
 }
