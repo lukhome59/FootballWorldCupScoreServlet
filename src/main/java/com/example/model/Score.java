@@ -17,11 +17,19 @@ public class Score {
 	public int getHomeScore() {
 		return mHomeScore;
 	}
-	
+
 	public int getAwayScore() {
 		return mAwayScore;
 	}
-	
+
+	public void setHomeScore(int score) {
+		mHomeScore = score;
+	}
+
+	public void setAwayScore(int score) {
+		mAwayScore = score;
+	}
+
 	public Score swap() {
 		return new Score(mAwayTeam, mHomeTeam);
 	}
@@ -31,12 +39,13 @@ public class Score {
 		if (this == o) return true;
 		if (!(o instanceof Score)) return false;
 		Score other = (Score) o;
-		return mHomeTeam.equals(other.mHomeTeam) && mAwayTeam.equals(other.mAwayTeam);
+		return mHomeTeam.equals(other.mHomeTeam) && mAwayTeam.equals(other.mAwayTeam)
+				&& mHomeScore == other.mHomeScore && mAwayScore == other.mAwayScore;
 	}
 
 	@Override
 	public int hashCode() {
-		return 31 * mHomeTeam.hashCode() + mAwayTeam.hashCode();
+		return 31 * (31 * mHomeTeam.hashCode() + mAwayTeam.hashCode()) + 31 * mHomeScore + mAwayScore;
 	}
 
 	private final String mHomeTeam;

@@ -1,6 +1,7 @@
 package com.example;
 
 import com.example.database.Database;
+import com.example.model.DatabaseScore;
 import com.example.model.Score;
 
 import jakarta.servlet.AsyncContext;
@@ -13,25 +14,44 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+/**
+ * Servlet handling Football World Cup score operations via HTTP POST requests.
+ * Consider to utilize whole REST API in the future.
+ *
+ * <p>Supported endpoints:
+ * <ul>
+ *   <li>{@code /getSummary}   – returns the list of all ongoing games sorted by timestamp (descending)</li>
+ *   <li>{@code /startGame}    – starts a new game between two teams; requires {@code homeTeam} and {@code awayTeam} parameters</li>
+ *   <li>{@code /finishGame}   – removes a game by its {@code id}</li>
+ *   <li>{@code /updateScore}  – updates the score of a game; requires {@code id}, {@code homeScore} and {@code awayScore} parameters</li>
+ * </ul>
+ *
+ * <p>All database operations are executed asynchronously on a dedicated single-thread executor.
+ * Every response is a JSON object containing at minimum a {@code result} field with value
+ * {@code "success"} or {@code "failure"}. On failure an additional {@code message} field
+ * describes the error.
+ */
 @WebServlet(asyncSupported = true, urlPatterns = {"/getSummary", "/startGame", "/finishGame", "/updateScore"})
 public class FootballWorldCupScoreServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     public static final String KEY_RESULT = "result";
     public static final String VALUE_RESULT_SUCCESS = "success";
     public static final String VALUE_RESULT_FAILURE = "failure";
-    public static final String KEY_ID = "id";
     public static final String PARAM_HOME_TEAM = "homeTeam";
     public static final String PARAM_AWAY_TEAM = "awayTeam";
+    public static final String PARAM_ID = "id";
+    public static final String PARAM_HOME_TEAM_SCORE = "homeScore";
+    public static final String PARAM_AWAY_TEAM_SCORE = "awayScore";
+    public static final String KEY_ID = "id";
     public static final String KEY_MESSAGE = "message";
     public static final String KEY_LIST = "list";
-    public static final String KEY_HOME_TEAM_NAME = "homeTeam";
-    public static final String KEY_AWAY_TEAM_NAME = "awayTeam";
+    public static final String KEY_HOME_TEAM = "homeTeam";
+    public static final String KEY_AWAY_TEAM = "awayTeam";
     public static final String KEY_HOME_TEAM_SCORE = "homeScore";
     public static final String KEY_AWAY_TEAM_SCORE = "awayScore";
 
@@ -54,8 +74,7 @@ public class FootballWorldCupScoreServlet extends HttpServlet {
         			result = handleFinishGame(request);
         			break;
         		case "/updateScore":
-        			result = CompletableFuture.completedFuture(
-        					new JSONObject().put(KEY_RESULT, VALUE_RESULT_SUCCESS));
+        			result = handleUpdateScore(request);
         			break;
         		default:
         			result = CompletableFuture.completedFuture(
@@ -83,18 +102,19 @@ public class FootballWorldCupScoreServlet extends HttpServlet {
 		return mDatabase.selectAsync(mDatabaseExecutor).thenApply(list -> {
 			JSONObject json = new JSONObject().put(KEY_RESULT, VALUE_RESULT_SUCCESS);
 			JSONArray jsonArray = new JSONArray();
-			for (Score score : list) {
-				JSONObject item = new JSONObject().put(KEY_HOME_TEAM_NAME, score.getHomeTeam())
+			for (DatabaseScore score : list) {
+				JSONObject item = new JSONObject().put(KEY_HOME_TEAM, score.getHomeTeam())
 						.put(KEY_HOME_TEAM_SCORE, score.getHomeScore())
-						.put(KEY_AWAY_TEAM_NAME, score.getAwayTeam())
-						.put(KEY_AWAY_TEAM_SCORE, score.getAwayScore());
+						.put(KEY_AWAY_TEAM, score.getAwayTeam())
+						.put(KEY_AWAY_TEAM_SCORE, score.getAwayScore())
+						.put(KEY_ID, score.getId());
 				jsonArray.put(item);
 			}
 			json.put(KEY_LIST, jsonArray);
 			return json;
 		});
 	}
-	
+
 	private CompletableFuture<JSONObject> handleStartGame(HttpServletRequest request) {
 		String homeTeam = request.getParameter(PARAM_HOME_TEAM);
 		String awayTeam = request.getParameter(PARAM_AWAY_TEAM);
@@ -108,10 +128,55 @@ public class FootballWorldCupScoreServlet extends HttpServlet {
 	}
 
 	private CompletableFuture<JSONObject> handleFinishGame(HttpServletRequest request) {
-		String homeTeam = request.getParameter(PARAM_HOME_TEAM);
-		String awayTeam = request.getParameter(PARAM_AWAY_TEAM);
-		Score score = new Score(homeTeam, awayTeam);
-		return mDatabase.deleteAsync(score, mDatabaseExecutor).thenApply(unused -> {
+		int id;
+		try {
+			id = Integer.parseInt(request.getParameter(PARAM_ID));
+		}
+		catch (NumberFormatException e) {
+			return CompletableFuture.completedFuture(
+					new JSONObject().put(KEY_RESULT, VALUE_RESULT_FAILURE)
+					.put(KEY_MESSAGE, "Invalid ID format: "
+								+ request.getParameter(PARAM_ID)));
+		}
+		return mDatabase.deleteAsync(id, mDatabaseExecutor).thenApply(unused -> {
+			JSONObject json = new JSONObject()
+					.put(KEY_RESULT, VALUE_RESULT_SUCCESS);
+			return json;
+		});
+	}
+
+	private CompletableFuture<JSONObject> handleUpdateScore(HttpServletRequest request) {
+		int homeScore;
+		try {
+			homeScore = Integer.parseInt(request.getParameter(PARAM_HOME_TEAM_SCORE));
+		}
+		catch (NumberFormatException e) {
+			return CompletableFuture.completedFuture(
+					new JSONObject().put(KEY_RESULT, VALUE_RESULT_FAILURE)
+					.put(KEY_MESSAGE, "Invalid home team score format: "
+								+ request.getParameter(PARAM_HOME_TEAM_SCORE)));
+		}
+		int awayScore;
+		try {
+			awayScore = Integer.parseInt(request.getParameter(PARAM_AWAY_TEAM_SCORE));
+		}
+		catch (NumberFormatException e) {
+			return CompletableFuture.completedFuture(
+					new JSONObject().put(KEY_RESULT, VALUE_RESULT_FAILURE)
+					.put(KEY_MESSAGE, "Invalid away team score format: "
+								+ request.getParameter(PARAM_AWAY_TEAM_SCORE)));
+		}
+		int id;
+		try {
+			id = Integer.parseInt(request.getParameter(PARAM_ID));
+		}
+		catch (NumberFormatException e) {
+			return CompletableFuture.completedFuture(
+					new JSONObject().put(KEY_RESULT, VALUE_RESULT_FAILURE)
+					.put(KEY_MESSAGE, "Invalid ID format: "
+								+ request.getParameter(PARAM_ID)));
+		}
+		return mDatabase.updateAsync(id, homeScore, awayScore, mDatabaseExecutor).thenApply(unused -> {
 			JSONObject json = new JSONObject()
 					.put(KEY_RESULT, VALUE_RESULT_SUCCESS);
 			return json;

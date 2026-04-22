@@ -33,30 +33,45 @@ public class Database {
                 executor);
 	}
 
-	public CompletableFuture<Void> deleteAsync(Score score, Executor executor) {
+	public CompletableFuture<Void> deleteAsync(int id, Executor executor) {
 		return CompletableFuture.supplyAsync(
                 () -> {
-                	if (mScores.remove(DatabaseScore.getHash(score)) == null) {
-                		if (mScores.remove(DatabaseScore.getHash(score.swap())) == null) {
-                			throw new IllegalStateException("Removal failed: no item");
-                		}
+                	if (mScores.remove(id) == null) {
+                		throw new IllegalStateException("Removal failed: no item");
                 	}
                     return null;
                 },
                 executor);
 	}
 
-	public CompletableFuture<List<Score>> selectAsync(Executor executor) {
+	public CompletableFuture<List<DatabaseScore>> selectAsync(Executor executor) {
 		return CompletableFuture.supplyAsync(
                 () -> mScores.values().stream()
-                	.sorted(Comparator.comparing(DatabaseScore::getTimestamp))
-                	.map(s -> (Score) s)
+                	.sorted(Comparator.comparing(DatabaseScore::getTimestamp).reversed())
                 	.collect(Collectors.toList()),
+                executor);
+	}
+
+	public CompletableFuture<Void> updateAsync(int id, int homeScore, int awayScore, Executor executor) {
+		return CompletableFuture.supplyAsync(
+                () -> {
+                	Score found = find(id);
+                	if (found == null) {
+                		throw new IllegalStateException("Update failed: no item");
+                	}
+                	found.setHomeScore(homeScore);
+                	found.setAwayScore(awayScore);
+                    return null;
+                },
                 executor);
 	}
 
 	private DatabaseScore find(Score score) {
 		return mScores.get(DatabaseScore.getHash(score));
+	}
+
+	private DatabaseScore find(int id) {
+		return mScores.get(id);
 	}
 
 	private final HashMap<Integer, DatabaseScore> mScores = new HashMap<>();
