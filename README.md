@@ -18,3 +18,7 @@ Supported requests:
 * Run Eclipse IDE
 * Import the repo, select Existing Maven Projects
 * Select Run As >Run on Server
+
+# Run
+* Open in any browser: http://localhost:8080/football-world-cup-score-servlet/
+* Adjust server name and port if needed

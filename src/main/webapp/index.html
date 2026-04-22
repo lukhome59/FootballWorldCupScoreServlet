@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Football World Cup Score Board</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; }
+        h2 { margin-top: 30px; }
+        label { display: inline-block; width: 140px; }
+        input { width: 150px; margin: 4px 0; }
+        button { margin-top: 8px; padding: 6px 16px; cursor: pointer; }
+        #output { margin-top: 20px; min-height: 40px; }
+        #output table { border-collapse: collapse; width: 100%; }
+        #output th, #output td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
+        #output th { background: #e0e0e0; }
+        #output .msg { background: #f4f4f4; padding: 12px; border: 1px solid #ccc; }
+        hr { margin: 30px 0; }
+    </style>
+</head>
+<body>
+
+<h1>Football World Cup Score Board</h1>
+
+<!-- START GAME -->
+<h2>Start Game</h2>
+<label>Home Team:</label><input id="startHomeTeam" type="text" placeholder="e.g. Poland"><br>
+<label>Away Team:</label><input id="startAwayTeam" type="text" placeholder="e.g. Germany"><br>
+<button onclick="startGame()">Start Game</button>
+
+<hr>
+
+<h2>Board</h2>
+<div id="error">—</div>
+
+<div id="output">—</div>
+
+<script>
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    function showSummaryResponse(text) {
+        var out = document.getElementById('output');
+        var error = document.getElementById('error');
+        try {
+            var data = JSON.parse(text);
+            if (!(data.result === 'success' && Array.isArray(data.list))) {
+            	error.innerHTML += '<p class="msg" style="color:red;">Error: ' + (data.message || 'Unknown error') + '</p>';
+            }
+            if (data.list.length === 0) {
+                out.innerHTML = '<p class="msg">No games in progress.</p>';
+                return;
+            }
+            var html = '<table><tr><th>Home Team</th><th>Home Score</th><th>Away Team</th><th>Away Score</th><th>Actions</th></tr>';
+            data.list.forEach(function(game) {
+                html += '<tr>'
+                    + '<td>' + escapeHtml(game.homeTeam) + '</td>'
+                    + '<td><input type="number" value="' + game.homeScore + '" id="hs-' + game.id + '" style="width:55px"></td>'
+                    + '<td>' + escapeHtml(game.awayTeam) + '</td>'
+                    + '<td><input type="number" value="' + game.awayScore + '" id="as-' + game.id + '" style="width:55px"></td>'
+                    + '<td>'
+                    + '<button onclick="updateScoreById(' + game.id + ')">Update</button> '
+                    + '<button onclick="finishGameById(' + game.id + ')">Finish</button>'
+                    + '</td>'
+                    + '</tr>';
+            });
+            html += '</table>';
+            out.innerHTML = html;
+        } catch (e) {
+            out.innerHTML = '<p class="msg">' + text + '</p>';
+        }
+    }
+
+    function showActionResponse(text) {
+        var out = document.getElementById('error');
+        try {
+            var data = JSON.parse(text);
+            if (data.result !== 'success') {
+                out.innerHTML = '<p class="msg" style="color:red;">Error: ' + (data.message || 'Unknown error') + '</p>';
+            }
+            getSummary();
+        } catch (e) {
+            out.innerHTML = '<p class="msg">' + text + '</p>';
+        }
+    }
+
+    function post(url, params, callback) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', "/football-world-cup-score-servlet" + url, true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onload = function () { callback(xhr.responseText); };
+        xhr.onerror = function () { document.getElementById('output').innerHTML = '<p class="msg" style="color:red;">Request failed</p>'; };
+        xhr.send(params);
+    }
+
+    function getSummary() {
+        post('/getSummary', '', showSummaryResponse);
+    }
+
+    function startGame() {
+    	var out = document.getElementById('error');
+    	out.innerHTML = '';
+        var homeTeam = document.getElementById('startHomeTeam').value;
+        var awayTeam = document.getElementById('startAwayTeam').value;
+        post('/startGame', 'homeTeam=' + encodeURIComponent(homeTeam) + '&awayTeam=' + encodeURIComponent(awayTeam), showActionResponse);
+    }
+
+    function updateScoreById(id) {
+    	var out = document.getElementById('error');
+    	out.innerHTML = '';
+        var homeScore = document.getElementById('hs-' + id).value;
+        var awayScore = document.getElementById('as-' + id).value;
+        post('/updateScore', 'id=' + id + '&homeScore=' + homeScore + '&awayScore=' + awayScore, showActionResponse);
+    }
+
+    function finishGameById(id) {
+    	var out = document.getElementById('error');
+    	out.innerHTML = '';
+        post('/finishGame', 'id=' + id, showActionResponse);
+    }
+
+    getSummary();
+</script>
+
+</body>
+</html>
