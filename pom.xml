@@ -27,6 +27,13 @@
             <scope>provided</scope>
         </dependency>
 
+		<dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20251224</version>
+            <scope>compile</scope>
+       </dependency>
+		
         <!-- JUnit 5 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
