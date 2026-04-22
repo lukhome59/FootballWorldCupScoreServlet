@@ -142,6 +142,13 @@ class FootballWorldCupScoreServletTest {
     }
 
     @Test
+    void testStartTheSameTeam() throws Exception {
+    	Score score = new Score("the", "the");
+    	JSONObject response = executeStartGame(score);
+    	verifyResult(response, FootballWorldCupScoreServlet.VALUE_RESULT_FAILURE);
+    }
+    
+    @Test
     void testStartGameTwice() throws Exception {	
     	Score score = new Score("aaa", "bbb");
     	executeStartGame(score);

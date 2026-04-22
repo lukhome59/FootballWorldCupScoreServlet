@@ -15,16 +15,19 @@ public class Database {
 		return CompletableFuture.supplyAsync(
                 () -> {
                 	if (score.getHomeTeam().isEmpty()) {
-                		throw new IllegalStateException("Insertion failed: missing home team");
+                		throw new RuntimeException("Insertion failed: missing home team");
                 	}
                 	if (score.getAwayTeam().isEmpty()) {
-                		throw new IllegalStateException("Insertion failed: missing away team");
+                		throw new RuntimeException("Insertion failed: missing away team");
+                	}
+                	if (score.getAwayTeam().equals(score.getHomeTeam())) {
+                		throw new RuntimeException("Insertion failed: two same teams");
                 	}
                 	if (find(score) != null) {
-                		throw new IllegalStateException("Insertion failed. The item already exists");
+                		throw new RuntimeException("Insertion failed. The item already exists");
                 	}
                 	if (find(score.swap()) != null) {
-                		throw new IllegalStateException("Insertion failed. The swapped item already exists");
+                		throw new RuntimeException("Insertion failed. The swapped item already exists");
                 	}
                 	DatabaseScore databaseScore = new DatabaseScore(score);
                 	mScores.put(databaseScore.getId(), databaseScore);
@@ -37,7 +40,7 @@ public class Database {
 		return CompletableFuture.supplyAsync(
                 () -> {
                 	if (mScores.remove(id) == null) {
-                		throw new IllegalStateException("Removal failed: no item");
+                		throw new RuntimeException("Removal failed: no item");
                 	}
                     return null;
                 },
@@ -57,7 +60,7 @@ public class Database {
                 () -> {
                 	Score found = find(id);
                 	if (found == null) {
-                		throw new IllegalStateException("Update failed: no item");
+                		throw new RuntimeException("Update failed: no item");
                 	}
                 	found.setHomeScore(homeScore);
                 	found.setAwayScore(awayScore);
