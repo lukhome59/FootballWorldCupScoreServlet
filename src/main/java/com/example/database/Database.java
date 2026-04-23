@@ -29,7 +29,7 @@ public class Database {
                 	if (find(score.swap()) != null) {
                 		throw new RuntimeException("Insertion failed. The swapped item already exists");
                 	}
-                	DatabaseScore databaseScore = new DatabaseScore(score);
+                	DatabaseScore databaseScore = new DatabaseScore(generateNextId(), score);
                 	mScores.put(databaseScore.getId(), databaseScore);
                     return databaseScore.getId();
                 },
@@ -70,12 +70,20 @@ public class Database {
 	}
 
 	private DatabaseScore find(Score score) {
-		return mScores.get(DatabaseScore.getHash(score));
+		return mScores.values().stream()
+			.filter(ds -> ds.getHomeTeam().equals(score.getHomeTeam()) && ds.getAwayTeam().equals(score.getAwayTeam()))
+			.findFirst()
+			.orElse(null);
 	}
 
 	private DatabaseScore find(int id) {
 		return mScores.get(id);
 	}
 
+	private int generateNextId() {
+		return ++mLastGeneratedId;
+	}
+
 	private final HashMap<Integer, DatabaseScore> mScores = new HashMap<>();
+	private int mLastGeneratedId;
 }

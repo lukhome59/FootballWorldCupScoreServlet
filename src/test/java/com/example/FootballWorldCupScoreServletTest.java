@@ -90,7 +90,7 @@ class FootballWorldCupScoreServletTest {
         verifyResult(response2, FootballWorldCupScoreServlet.VALUE_RESULT_SUCCESS);
 
         List<DatabaseScore> list = new ArrayList<>();
-        DatabaseScore dbScore = new DatabaseScore(score);
+        DatabaseScore dbScore = new DatabaseScore(id, score);
         dbScore.setHomeScore(10);
         dbScore.setAwayScore(2);
         list.add(dbScore);
@@ -108,7 +108,7 @@ class FootballWorldCupScoreServletTest {
         verifyResult(response2, FootballWorldCupScoreServlet.VALUE_RESULT_SUCCESS);
 
         List<DatabaseScore> list = new ArrayList<>();
-        DatabaseScore dbScore = new DatabaseScore(score);
+        DatabaseScore dbScore = new DatabaseScore(id, score);
         dbScore.setHomeScore(20);
         dbScore.setAwayScore(4);
         list.add(dbScore);
@@ -119,18 +119,19 @@ class FootballWorldCupScoreServletTest {
     void testOrderAfterUpdateScore() throws Exception {
     	Score score1 = new Score("aaa", "bbb");
     	JSONObject response1 = executeStartGame(score1);
-    	int id = verifyValidId(response1);
+    	int id1 = verifyValidId(response1);
 
     	Score score2 = new Score("xxx", "zzz");
-    	executeStartGame(score2);
-
-    	executeUpdateScore(id, "5", "4");
+    	JSONObject response2 = executeStartGame(score2);
+    	int id2 = verifyValidId(response2);
+    	
+    	executeUpdateScore(id1, "5", "4");
 
         List<DatabaseScore> list = new ArrayList<>();
-        DatabaseScore dbScore1 = new DatabaseScore(score1);
+        DatabaseScore dbScore1 = new DatabaseScore(id1, score1);
         dbScore1.setHomeScore(5);
         dbScore1.setAwayScore(4);
-        DatabaseScore dbScore2 = new DatabaseScore(score2);
+        DatabaseScore dbScore2 = new DatabaseScore(id2, score2);
         list.add(dbScore1);
         list.add(dbScore2);
         validateSummary(list);
@@ -206,7 +207,7 @@ class FootballWorldCupScoreServletTest {
     	int id = verifyValidId(response1);
 
         List<DatabaseScore> list = new ArrayList<>();
-        DatabaseScore dbScore = new DatabaseScore(score);
+        DatabaseScore dbScore = new DatabaseScore(id, score);
         assertEquals(id, dbScore.getId());
         list.add(dbScore);
         validateSummary(list);
@@ -215,14 +216,16 @@ class FootballWorldCupScoreServletTest {
     @Test
     void testTwoItemsSummary() throws Exception {
     	Score score1 = new Score("aaa", "bbb");
-    	executeStartGame(score1);
-
+    	JSONObject response1 = executeStartGame(score1);
+    	int id1 = verifyValidId(response1);
+    	
     	Score score2 = new Score("www", "ttt");
-    	executeStartGame(score2);
-
+    	JSONObject response2 = executeStartGame(score2);
+    	int id2 = verifyValidId(response2);
+    	
         List<DatabaseScore> list = new ArrayList<>();
-        list.add(new DatabaseScore(score2));
-        list.add(new DatabaseScore(score1));
+        list.add(new DatabaseScore(id2, score2));
+        list.add(new DatabaseScore(id1, score1));
         validateSummary(list);
     }
 

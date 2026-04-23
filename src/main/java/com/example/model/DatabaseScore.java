@@ -3,15 +3,11 @@ package com.example.model;
 import java.sql.Timestamp;
 
 public class DatabaseScore extends Score {
-	public static int getHash(Score score) {
-		return 31 * score.getAwayTeam().hashCode() + score.getHomeTeam().hashCode();
-	}
-	
-	public DatabaseScore(Score score) {
+	public DatabaseScore(int id, Score score) {
 		super(score.getHomeTeam(), score.getAwayTeam());
 		setHomeScore(score.getHomeScore());
 		setAwayScore(score.getAwayScore());
-		mId = getHash(score);
+		mId = id;
 		updateTimestamp();
 	}
 	
