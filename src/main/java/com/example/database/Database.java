@@ -14,10 +14,10 @@ public class Database {
 	public CompletableFuture<Integer> insertAsync(Score score, Executor executor) {
 		return CompletableFuture.supplyAsync(
                 () -> {
-                	if (score.getHomeTeam().isEmpty()) {
+                	if (score.getHomeTeam() == null || score.getHomeTeam().isEmpty()) {
                 		throw new RuntimeException("Insertion failed: missing home team");
                 	}
-                	if (score.getAwayTeam().isEmpty()) {
+                	if (score.getAwayTeam() == null || score.getAwayTeam().isEmpty()) {
                 		throw new RuntimeException("Insertion failed: missing away team");
                 	}
                 	if (score.getAwayTeam().equals(score.getHomeTeam())) {
