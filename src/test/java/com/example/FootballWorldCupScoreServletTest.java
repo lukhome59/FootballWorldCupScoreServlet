@@ -158,7 +158,7 @@ class FootballWorldCupScoreServletTest {
     }
 
     @Test
-    void testStartTeamWthiTooLongName() throws Exception {
+    void testStartTeamWithTooLongName() throws Exception {
     	Score score = new Score("1234567890A", "aaa");
     	JSONObject response = executeStartGame(score);
     	verifyResult(response, FootballWorldCupScoreServlet.VALUE_RESULT_FAILURE);
