@@ -62,7 +62,7 @@ public class FootballWorldCupScoreServlet extends HttpServlet {
         final AsyncContext asyncContext = request.startAsync();
         asyncContext.start(() -> {
         	CompletableFuture<JSONObject> result;
-            response.setContentType("text/plain");
+            response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
             switch (request.getServletPath()) {
         		case "/getSummary":
