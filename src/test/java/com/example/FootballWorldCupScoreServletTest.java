@@ -59,7 +59,7 @@ class FootballWorldCupScoreServletTest {
         JSONObject response2 = executeUpdateScore(id, "_", "_");
         verifyResult(response2, FootballWorldCupScoreServlet.VALUE_RESULT_FAILURE);
     }
-    
+
     @Test
     void testUpdateNegativeScore() throws Exception {
     	Score score = new Score("aaa", "bbb");
@@ -124,7 +124,7 @@ class FootballWorldCupScoreServletTest {
     	Score score2 = new Score("xxx", "zzz");
     	JSONObject response2 = executeStartGame(score2);
     	int id2 = verifyValidId(response2);
-    	
+
     	executeUpdateScore(id1, "5", "4");
 
         List<DatabaseScore> list = new ArrayList<>();
@@ -156,7 +156,7 @@ class FootballWorldCupScoreServletTest {
     	JSONObject response = executeStartGame(score);
     	verifyResult(response, FootballWorldCupScoreServlet.VALUE_RESULT_FAILURE);
     }
-    
+
     @Test
     void testStartTeamWthiTooLongName() throws Exception {
     	Score score = new Score("1234567890A", "aaa");
@@ -218,11 +218,11 @@ class FootballWorldCupScoreServletTest {
     	Score score1 = new Score("aaa", "bbb");
     	JSONObject response1 = executeStartGame(score1);
     	int id1 = verifyValidId(response1);
-    	
+
     	Score score2 = new Score("www", "ttt");
     	JSONObject response2 = executeStartGame(score2);
     	int id2 = verifyValidId(response2);
-    	
+
         List<DatabaseScore> list = new ArrayList<>();
         list.add(new DatabaseScore(id2, score2));
         list.add(new DatabaseScore(id1, score1));
@@ -319,8 +319,8 @@ class FootballWorldCupScoreServletTest {
     				expectedList.get(i).getAwayTeam());
     		assertEquals(jsonList.getJSONObject(i).getInt(FootballWorldCupScoreServlet.KEY_HOME_TEAM_SCORE),
     				expectedList.get(i).getHomeScore());
-    		assertEquals(jsonList.getJSONObject(i).getInt(FootballWorldCupScoreServlet.KEY_HOME_TEAM_SCORE),
-    				expectedList.get(i).getHomeScore());
+    		assertEquals(jsonList.getJSONObject(i).getInt(FootballWorldCupScoreServlet.KEY_AWAY_TEAM_SCORE),
+    				expectedList.get(i).getAwayScore());
     		assertEquals(jsonList.getJSONObject(i).getInt(FootballWorldCupScoreServlet.KEY_ID),
     				expectedList.get(i).getId());
     	}
